@@ -1,14 +1,18 @@
+from collections import OrderedDict
+
+from termcolor import colored
+
 
 def load(path):
     file = open(path)
     lines = file.readlines()
-    pdx_h, pdx_v, h = get_pdx(lines)
-    return sort_gotten_pdx(pdx_v, h)
+    pdx_h, pdx_v = get_pdx(lines)
+    return pdx_v
 
 
 def loads(string):
     lines = str(string).splitlines()
-    pdx_h, pdx_v, h = get_pdx(lines)
+    pdx_h, pdx_v = get_pdx(lines)
     return pdx_v
 
 
@@ -18,18 +22,11 @@ def dump_dict(content_dict, path):
     file.writelines(lines)
     file.close()
 
-def sort_gotten_pdx(pdx_v, header):
-    #This one should be self-explanatory. Each value in headers is assigned
-    print("Values as array: " + str(pdx_v))
-    value_dict = {}
-    for i in range(1,len(header)):
-        value_dict[header[i]] = pdx_v[header[i]]
-    return {header[0], value_dict}
 
 def set_pdx(content_dict, cycle=0):
     # print(colored("Started new cycle with value " + str(cycle), "yellow"))
     lines = []
-    if type(content_dict) == dict:
+    if type(content_dict) == OrderedDict or dict:
         for idea_key in content_dict.keys():
             # lines.append(idea_key + " = " + "{\n")
             # print("Type of content_dict: " + str(type(content_dict)))
@@ -38,12 +35,12 @@ def set_pdx(content_dict, cycle=0):
                 lines.append("\t" * cycle + idea_key + " = {\n")
                 # print(colored("Appended " + idea_key + " = {\n", "green"))
 
-                for i, (k, v) in enumerate(content_dict[idea_key].items()):
+                for k, v in content_dict[idea_key].items():
                     # print(str(k) + ": " + str(v))
-                    if type(v) == dict:
-                        lines += set_pdx({k: v}, cycle + 1)
+                    if type(v) is not str:
+                        # print(colored("Value is a dictionary: " + str(v), 'yellow'))
+                        lines += set_pdx(OrderedDict({k: v}), cycle + 1)
                     else:
-                        print(k, v)
                         lines.append("\t" * (cycle + 1) + str(k) + " = " + str(v) + "\n")
                         # print(colored("Appended " + lines[-1], 'green'))
 
@@ -59,7 +56,7 @@ def set_pdx(content_dict, cycle=0):
 
 
 def get_pdx(lines, cycle=0):
-    '''
+    """
     Let me try to explain this function in case I will work on it again and forget everything
 
     lines: Lines is the lines to read; this is an array of strings.
@@ -95,8 +92,8 @@ def get_pdx(lines, cycle=0):
     The program finds the amount of lines it has to read in that value and reads them using this function once again,
     simply pasting the header and value contents as they are being read. Some malfunctions would now occur, because
     it could happen, that a value looked like this:
-    	the_shroud_of_turin = {
-    	    #effect in SAV_ideas
+        the_shroud_of_turin = {
+            #effect in SAV_ideas
             #papal_influence = 1
             #prestige = 0.5
         }
@@ -104,16 +101,13 @@ def get_pdx(lines, cycle=0):
     code cannot execute completely empty header-values (which means their code actually interprets comments, how
     terribly inefficient! qwq).
     To prevent this issue, a value "cycle" is passed, that tells the program to apply a different ruleset, in which
-    comments are valid lines. "cycle" could easily be a bool, but having it as an integer makes debugging simpler and
+    comments are noticed and simply changed to "#Some Reference".
+    "cycle" could easily be a bool, but having it as an integer makes debugging simpler and
     helps to illustrate how the program works, while also making it secure to always arrive back at its original state.
+    """
 
-
-
-
-    '''
     header = None
-    headers = []
-    values = {}
+    values = OrderedDict()
 
     i = 0
     new_lines = []  # Create subset of value lines
@@ -137,8 +131,7 @@ def get_pdx(lines, cycle=0):
                     # Line contains an "=" -> contains a value
                     if [*(parts[1].strip())][-1] == "{":
                         header = parts[0].strip()
-                        print("New Header: " + header)
-                        headers.append(header)
+                        # print("New Header: " + header)
                         # print("Cycle: " + str(cycle))
 
                         new_lines = []  # Create subset of value lines
@@ -151,7 +144,7 @@ def get_pdx(lines, cycle=0):
                         '''
 
                         if i != len(lines) - 1:
-                            ii = i+1
+                            ii = i + 1
                             closed_bracket_skip = 0
                             value_line = lines[ii]
                             if cycle == 0:
@@ -182,23 +175,16 @@ def get_pdx(lines, cycle=0):
 
                         i += len(new_lines)  # Skip new lines to not add their values directly into the set
                         # print("i was added to. i is now: " + str(i))
-                        new_header, new_values, n_headers = get_pdx(new_lines, cycle=cycle + 1)
-                        headers += n_headers
-                        # print("!!! Start of new cycle with overheader " + str(header))
+                        new_header, new_values = get_pdx(new_lines, cycle=cycle + 1)
                         # This seems dangerous, and it's because it is
-                        # This should in theory resolve everything in the right order
+                        # This should in theory resolve everything in the right order. However, it does not.
 
                         if new_header is None and cycle > 0:
                             values[header] = new_values
-                            print("Got values only! " + str(values[header]))
                         elif cycle > 0:
-                            headers.append(new_header)
-                            #if new_values.get(new_header):
-                            #    values[header] = new_values
-                            #else:
                             values[new_header] = new_values
                         else:
-                            values[header]=new_values
+                            values[header] = new_values
                     else:
                         values[str(parts[0].strip())] = (parts[1]).strip()
                         # For simple values, such as
@@ -223,17 +209,4 @@ def get_pdx(lines, cycle=0):
     # print("Values: " + str(values))
     # if new_lines:
     #     print("With lines: " + str(new_lines))
-    # FIXME for some reason which i don't understand, the final header is the last subheader
-    if cycle == 0:
-        print("Headers: " + str(headers))
-    return header, values, headers
-
-
-tst_dict = load("tst.txt")
-print("Ideaset as array: " + str(tst_dict))
-#tst_lines = set_pdx(tst_dict)
-#print("-----Final Lines------")
-#s = ""
-#for line in tst_lines:
-#    s += line
-#print(s)
+    return header, values
