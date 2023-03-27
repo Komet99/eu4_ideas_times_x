@@ -30,6 +30,9 @@ def set_up():
 
             json.dump(dictionary, settings_file)
             settings_file.close()
+        return False
+    else:
+        return True
 
 
 def get_json_values():
@@ -70,6 +73,8 @@ def make_mod(mdp, fmf, iloc, gmloc, choice):
     multiplier = float(input("Which  number do you want to multiply the values with? "))
     idea_source = os.path.join(iloc, os.listdir(iloc)[choice])
 
+    ideas_name = os.path.basename(idea_source)
+
     idea_dict = pdx.load(idea_source)
 
     for idea_key in idea_dict.keys():
@@ -81,38 +86,67 @@ def make_mod(mdp, fmf, iloc, gmloc, choice):
                     for (v_key, v_val) in enumerate(v.items()):
                         try:
                             float(v_val[1])
+                            adj_val = round(float(v_val[1]) * multiplier, 2)
+                            if adj_val == 0.99:
+                                adj_val = 1
+                            if adj_val == 0.66:
+                                adj_val = 0.67
+
+                            # Exceptions for values that would not make sense to be above hundred
+                            if str(v_val[0]) == "religious_unity" and adj_val > 1:
+                                vals["tolerance_own"] = {adj_val - 1}
+                                adj_val = 1
+                            elif str(v_val[0]) == "cav_to_inf_ratio" and adj_val > 1:
+                                vals["cavalry_cost"] = {-1 * (adj_val - 1)}
+                                adj_val = 1
+                            elif str(v_val[0]) == "land_forcelimit":
+                                adj_val = v_val[1]
+                            elif str(v_val[0]) == "vassal_forcelimit_bonus":
+                                adj_val = v_val[1]
+                            elif str(v_val[0]) == "capture_ship_chance" and adj_val > 1:
+                                vals["naval_morale"] = {adj_val - 1}
+                                adj_val = 1
+
+                            vals[v_val[0]] = adj_val
+
                         except:
-                            # print("Error converting value")
-                            break
-
-                        adj_val = round(float(v_val[1]) * multiplier, 2)
-                        if adj_val == 0.99:
-                            adj_val = 1.0
-                        if adj_val == 0.66:
-                            adj_val = 0.67
-
-                        # Exceptions for values that would not make sense to be above hundred
-                        if str(v_val[0]) == "religious_unity" and adj_val > 1:
-                            vals["tolerance_own"] = {adj_val - 1}
-                            adj_val = 1
-                        elif str(v_val[0]) == "cav_to_inf_ratio" and adj_val > 1:
-                            vals["cavalry_cost"] = {-1 * (adj_val - 1)}
-                            adj_val = 1
-                        elif str(v_val[0]) == "land_forcelimit":
-                            adj_val = v_val[1]
-                        elif str(v_val[0]) == "vassal_forcelimit_bonus":
-                            adj_val = v_val[1]
-                        elif str(v_val[0]) == "capture_ship_chance" and adj_val > 1:
-                            vals["naval_morale"] = {adj_val - 1}
-                            adj_val = 1
-
-                        vals[v_val[0]] = adj_val
-
-                        # print("Multiplied " + str(v_val[0]) + " to " + str(vals[v_val[0]]))
+                            vals[v_val[0]] = v_val[1]
 
                 idea_dict[idea_key][k] = vals
 
-    print(idea_dict["HLR_ideas"])
+    # Create Path
+    # Mod name
+    mod_name = (str(len(os.listdir(finished_mod_folder))) + "__" + ideas_name[:-3] + "_times_"
+                + str(multiplier)).replace(".", "_point_")
+
+    # Path variable
+    dir_path = os.path.join(finished_mod_folder,
+                            mod_name)
+    # Create folders
+    os.mkdir(dir_path)
+    os.mkdir(os.path.join(dir_path, "common"))
+    os.mkdir(os.path.join(dir_path, "common", "ideas"))
+
+    # Create File
+    file = open(os.path.join(dir_path, "common\\ideas\\", ideas_name), "x")
+    pdx.dump_dict(idea_dict, os.path.join(dir_path, "common\\ideas\\", ideas_name))
+
+    # Created ideas
+    descriptor_file = open(os.path.join(dir_path, "descriptor.mod"), 'w')
+    desc_string = ('version="1"\n'
+                   'tags={\n\t"gameplay"\n}\n'
+                   'name="' + mod_name.replace("_", " ") + '"\n'
+                                                           'supported_version="latest"\n')
+
+    descriptor_file.write(desc_string)
+    descriptor_file.close()
+
+    mod_file = open(os.path.join(eu4_mod_dir_path, mod_name + ".mod", ), "w")
+
+    mod_file.write(desc_string)
+    mod_file.write(('path="' + dir_path.replace(str("\\"), "/") + '"'))
+    mod_file.close()
+    print("Created mod " + mod_name + " at " + dir_path)
 
 
 # Press the green button in the gutter to run the script.
