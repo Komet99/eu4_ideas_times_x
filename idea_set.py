@@ -1,16 +1,9 @@
+import pdx
 from idea import Idea
 
 
 class IdeaSet:
-    tag = "HAB"
-    start = {}
-    bonus = {}
-
-    trigger = {}
-    free = True
-    ideas = [Idea(), Idea(), Idea(), Idea(), Idea(), Idea(), Idea()]
-
-    def __init__(self, tag, start, bonus, trigger, ideas, free=True):
+    def __init__(self, tag="NON", start=None, bonus=None, trigger=None, ideas=None, free=True):
         self.tag = tag
         self.start = start
         self.bonus = bonus
@@ -19,3 +12,6 @@ class IdeaSet:
 
         if free is not None:
             self.free = free
+
+    def dict_to_idea_set(dict):
+        return IdeaSet()
