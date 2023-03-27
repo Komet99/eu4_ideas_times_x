@@ -1,7 +1,5 @@
 from collections import OrderedDict
 
-from termcolor import colored
-
 
 def load(path):
     file = open(path)
@@ -26,32 +24,31 @@ def dump_dict(content_dict, path):
 def set_pdx(content_dict, cycle=0):
     # print(colored("Started new cycle with value " + str(cycle), "yellow"))
     lines = []
-    if type(content_dict) == OrderedDict or dict:
+    if type(content_dict) is (OrderedDict or dict):
         for idea_key in content_dict.keys():
-            # lines.append(idea_key + " = " + "{\n")
             # print("Type of content_dict: " + str(type(content_dict)))
             # print("Type of content_dict[idea]: " + str(type(content_dict[idea_key])))
-            if not type(content_dict[idea_key]) == str:
+            if type(content_dict[idea_key]) is OrderedDict or \
+                    type(content_dict[idea_key]) is dict:
                 lines.append("\t" * cycle + idea_key + " = {\n")
-                # print(colored("Appended " + idea_key + " = {\n", "green"))
-
                 for k, v in content_dict[idea_key].items():
                     # print(str(k) + ": " + str(v))
-                    if type(v) is not str:
-                        # print(colored("Value is a dictionary: " + str(v), 'yellow'))
+                    if type(v) is OrderedDict or \
+                            type(v) is dict and \
+                            bool(v.items()) is True:
+                        # print("Value is a dictionary: " + str(v))
                         lines += set_pdx(OrderedDict({k: v}), cycle + 1)
+                    elif type(v) is OrderedDict or \
+                            type(v) is dict and \
+                            bool(v.items()) is False:
+                        lines.append("\t" * (cycle + 1) + k + " = {\n")
+                        lines.append("\t" * (cycle + 2) + "#Some Reference\n")
+                        lines.append("\t" * (cycle + 1) + "}\n")
                     else:
                         lines.append("\t" * (cycle + 1) + str(k) + " = " + str(v) + "\n")
-                        # print(colored("Appended " + lines[-1], 'green'))
-
-                if len(content_dict[idea_key].items()) == 0:
-                    lines.append("\t" * (cycle + 1) + "#Some Reference\n")
-                    # print(colored("Appended " + lines[-1], 'cyan'))
-
                 lines.append("\t" * cycle + "}\n")
-                # print(colored("Appended " + lines[-1], 'yellow'))
-            # else:
-            # print(content_dict[idea_key] + " :" + str(content_dict[idea_key]))
+            else:
+                lines.append("\t" * cycle + str(idea_key) + " = " + str(content_dict[idea_key]) + "\n")
     return lines
 
 
@@ -210,3 +207,17 @@ def get_pdx(lines, cycle=0):
     # if new_lines:
     #     print("With lines: " + str(new_lines))
     return header, values
+
+
+def test():
+    tst_dict = load("tst.txt")
+    print("Ideaset as array: " + str(tst_dict))
+    tst_lines = set_pdx(tst_dict)
+    print("-----Final Lines------")
+    s = ""
+    for line in tst_lines:
+        s += line
+    print(s)
+
+
+test()
