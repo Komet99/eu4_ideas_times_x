@@ -15,6 +15,7 @@ C:\Program Files (x86)\Steam\steamapps\common\Europa Universalis IV\common\ideas
 
 def set_up():
     if not os.path.exists('settings.json'):
+        print("Created settings.json")
         if input("Try standard paths? [y/n]") == "n":
             settings_file = open('settings.json', 'w')
             mdp = input("Mod directory path (Most likely Documents/Paradox Interactive/Europa Universalis IV/mod)")
@@ -74,10 +75,10 @@ def make_mod(mdp, fmf, iloc, gmloc, choice):
     multiplier = float(input("Which  number do you want to multiply the values with? "))
     if choice == 0:
         idea_source = str(input("Input path here"))
-    if choice ==1:
+    if choice == 1:
         print("Feature not available yet")
     elif 1 < choice <= 6:
-        idea_source = os.path.join(iloc, os.listdir(iloc)[choice])
+        idea_source = os.path.join(iloc, os.listdir(iloc)[choice-2])
     else:
         print("Invalid choice")
 
